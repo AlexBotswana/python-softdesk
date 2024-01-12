@@ -15,8 +15,26 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.contrib.auth.models import User
+from softdeskapi.views import UserDetail, ProjectsViewSet, ProjectDetail, ContributorsViewSet, IssuesViewSet, CommentsViewSet
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'projects', ProjectsViewSet, basename='projects')
+
+router_contrib = DefaultRouter()
+router_contrib.register(r'projects', ContributorsViewSet, basename='contributors')
+
+router_issue = DefaultRouter()
+router_issue.register(r'issues', IssuesViewSet, basename='issues')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api-auth/', include('rest_framework.urls')),
+    path('users/<int:id>/', UserDetail.as_view(), name='UserDetail'),
+    path('projects/<int:id>/', ProjectDetail.as_view(), name='ProjectDetail'),
+    path('projects/users/<int:author_id>/', include(router.urls)),
+    path('projects/contributors/<int:project_id>/', include(router_contrib.urls)),
+    path('projects/issues/users/<int:assigned_user_id>/', include(router_issue.urls)),
 ]
