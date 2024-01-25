@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
     'softdeskapi',
 ]
 
@@ -101,6 +103,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Utiliser les paramètres de hachage de mot de passe par défaut de Django
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    # D'autres algorithmes de hachage peuvent être ajoutés ici si nécessaire
+]
+
+# Spécifier le nombre d'itérations pour l'algorithme PBKDF2
+# Cela peut être augmenté pour rendre les attaques par force brute plus difficiles
+PASSWORD_ITERATIONS = 120000
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -129,7 +141,34 @@ AUTH_USER_MODEL = 'softdeskapi.User'
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    ]
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+    ],
 }
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+AUTHENTICATION_CLASSES = [
+    'rest_framework_simplejwt.authentication.JWTAuthentication',
+]

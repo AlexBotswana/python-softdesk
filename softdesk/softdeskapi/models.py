@@ -31,7 +31,7 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(max_length=255, blank=False)
-    birth_day = models.DateField(default='2001-01-01')
+    birthdate = models.DateField(default='2001-01-01')
     can_be_contacted = models.BooleanField(default=False)
     can_data_be_shared = models.BooleanField(default=False)
     user_project = models.ManyToManyField(
