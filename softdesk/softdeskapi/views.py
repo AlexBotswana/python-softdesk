@@ -18,38 +18,172 @@ class SignUpView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
     permission_classes = [permissions.AllowAny]
-
     def perform_create(self, serializer):
         validated_data = serializer.validated_data
-        password = validated_data.get('password')
-        hashed_password = make_password(password)
-        serializer.save(password=hashed_password)
-        user = serializer.instance
-        Token.objects.get_or_create(user=user)
+        user = User.objects.create(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            )
 
-'''
-class SignInView(ObtainAuthToken):
-    def post(self, request, *args, **kwargs):
-        response = super(SignInView, self).post(request, *args, **kwargs)
-        token = response.data.get('token', None)
+        user.set_password(validated_data['password'])
+        user.save()
+        #user = serializer.instance
+        #Token.objects.get_or_create(user=user)
 
-        if token:
-            user = User.objects.get(pk=response.data.get('user_id'))
-            serializer = UsersSerializer(user)
-            return Response({'token': token, 'user': serializer.data})
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # delete token 
+            refresh_token = request.data["refresh_token"]
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"detail": "No refresh token provided."}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+###################################################
+# Create Projects, Contributors, Issues, Comments #
+###################################################
         
-        return response
-'''
-
 class ProjectsCreate(generics.CreateAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectsSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        validated_data = serializer.validated_data
+        project = Project.objects.create(
+            title=validated_data['title'],
+            description=validated_data['description'],
+            type=validated_data['type'],
+            author_id=self.request.user.id
+        )
+        project.save()
 
+class ContributorsCreate(generics.CreateAPIView):
+    queryset = Contributor.objects.all()
+    serializer_class = ContributorsSerializer
+    permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        user_id = self.request.data.get('user')
+        project_id = self.request.data.get('project')
+        is_owner = self.request.data.get('is_owner')
+
+        # Contributor user et project doivent etre des instances de classe User et Project
+        user_instance = User.objects.get(pk=user_id)
+        project_instance = Project.objects.get(pk=project_id)
+
+        serializer.save(user=user_instance, project=project_instance, is_owner=is_owner)
+
+class IssuesCreate(generics.CreateAPIView):
+    queryset = Issue.objects.all()
+    serializer_class = IssuesSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        title = self.request.data.get('title')
+        description = self.request.data.get('description')
+        assigned_user = self.request.data.get('assigned_user_id')
+        project_id = self.request.data.get('project_id')
+        author_user = self.request.user.id
+
+        assigned_user_instance = User.objects.get(pk=assigned_user)
+        author_user_instance = User.objects.get(pk=author_user)
+        
+        serializer.save(title=title,
+                        description=description,
+                        assigned_user_id=assigned_user_instance,
+                        project_id=project_id,
+                        author_user_id=author_user_instance,
+                    )
+
+class CommentsCreate(generics.CreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        description = self.request.data.get('description')
+        issue_id = self.request.data.get('issue_id')
+        author_user = self.request.user.id
+
+        issue_instance = Issue.objects.get(pk=issue_id)
+        author_user_instance = User.objects.get(pk=author_user)
+        
+        serializer.save(description=description,
+                        issue_id=issue_instance,
+                        author_user_id=author_user_instance,
+                    )
+
+###################################################
+# Update Projects, Issues, Comments #
+###################################################
+
+class ProjectUpdate(generics.UpdateAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectsSerializer
+    lookup_field = 'id'
+    permission_classes = [IsAuthenticated]
+    
+    def perform_update(self, request, id_project):
+        print('hello')
+        """
+        PUT Method for details project
+        Return :
+            - updated projects only by this author
+        """
+        """get_object_or_404(Project, id=id_project)
+        author = Contributor.objects.filter(project=id_project, role="AUTHOR").first()
+        print(author)
+        print(self.request.user.id)
+        if author.user.id == self.request.user.id:
+            serializer = ProjectsSerializer(
+                data=request.data)
+            if serializer.is_valid():
+                serializer.put(serializer.data, id_project)
+                return Response(serializer.data)
+            return Response("INPUT ERROR",
+                            status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response("YOU ARE NOT THE AUTHOR OF THIS PROJECT !\
+             Update Unauthorized",
+                        status=status.HTTP_401_UNAUTHORIZED)"""
+        
+        """ project = get_object_or_404(Project, id=id_project)
+        author = Project.objects.filter(project_id=project, role="author").first()
+        print(author.user.id)
+        print("hello")
+        if author.user.id == self.request.user.id:
+            serializer = ProjectsSerializer(project, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response("INPUT ERROR", status=status.HTTP_406_NOT_ACCEPTABLE)
+        else:
+            return Response("YOU ARE NOT THE AUTHOR OF THIS PROJECT! Update Unauthorized", status=status.HTTP_401_UNAUTHORIZED)"""
+
+"""class IssueUpdate(generics.UpdateAPIView):
+    queryset = Project.objects.all()
+    serializer_class = IssuesSerializer
+    lookup_field = 'id'
+    permission_classes = [IsAuthenticated]
+    
+    def update_issue(self, request, id_issue):
+        issue = get_object_or_404(Issue, id=id_issue)
+        serializer = IssuesSerializer(issue, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response("INPUT ERROR", status=status.HTTP_406_NOT_ACCEPTABLE)
+"""      
+############################################################
+# View details of Projects, Contributors, Issues, Comments #
+############################################################
 
 class UserDetail(generics.RetrieveAPIView):
     queryset = User.objects.all()
@@ -60,6 +194,7 @@ class ProjectDetail(generics.RetrieveAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectsSerializer
     lookup_field = 'id'
+    permission_classes = [IsAuthenticated]
 
 class IssueDetail(generics.RetrieveAPIView):
     queryset = Issue.objects.all()
@@ -70,6 +205,10 @@ class CommentDetail(generics.RetrieveAPIView):
     queryset  = Comment.objects.all()
     serializer_class = CommentsSerializer
     lookup_field = 'id'
+
+#########################################################
+# View list of Projects, Contributors, Issues, Comments #
+#########################################################
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
@@ -90,7 +229,7 @@ class ProjectsViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         serializer = ProjectsSerializer(queryset, many=True)
         return Response({"projects": serializer.data})
-
+    
 class ContributorsViewSet(viewsets.ModelViewSet):
     queryset = Contributor.objects.all()
     serializer_class = ContributorsSerializer
@@ -141,7 +280,7 @@ class CommentsViewSet(viewsets.ModelViewSet):
         return obj
 
     def get_queryset(self):
-        # Utilisez le paramètre 'author' pour filtrer les projets par utilisateur
+        # paramètre 'author' pour filtrer les projets par utilisateur
         author_id = self.kwargs.get("author_user_id")
         projects = Comment.objects.filter(author_user_id=author_id)
         return projects
@@ -151,18 +290,7 @@ class CommentsViewSet(viewsets.ModelViewSet):
         serializer = CommentsSerializer(queryset, many=True)
         return Response({"Comments": serializer.data})
 
-class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        try:
-            # delete token 
-            refresh_token = request.data.get("refresh_token")
-            if refresh_token:
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-                return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
-            else:
-                return Response({"detail": "No refresh token provided."}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+###################################################
+# Delete Projects, Contributors, Issues, Comments #
+###################################################
+    

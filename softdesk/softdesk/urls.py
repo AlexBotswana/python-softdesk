@@ -18,9 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth.models import User
 from softdeskapi.views import (
-                            SignUpView, 
-                            # SignInView, 
-                            ProjectsCreate, 
+                            SignUpView,
+                            LogoutView,
+                            ProjectsCreate,
+                            ContributorsCreate,
+                            IssuesCreate,
+                            CommentsCreate,
+                            ProjectUpdate,
+                            #IssueUpdate,
                             UserDetail, 
                             ProjectDetail, 
                             IssueDetail, 
@@ -29,7 +34,6 @@ from softdeskapi.views import (
                             ContributorsViewSet, 
                             IssuesViewSet, 
                             CommentsViewSet,
-                            LogoutView,
                             )
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -50,14 +54,22 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
     path('signup/', SignUpView.as_view(), name='signup'),
-    # path('signin/', SignInView.as_view(), name='signin'),
     path('login/', TokenObtainPairView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    # Create Projects, Contributors, Issues, Comments
     path('projects/create/', ProjectsCreate.as_view(), name='ProjectCreate'),
+    path('contributors/create/', ContributorsCreate.as_view(), name='ContributorCreate'),
+    path('issues/create/', IssuesCreate.as_view(), name='IssueCreate'),
+    path('comments/create/', CommentsCreate.as_view(), name='CommentCreate'),
+    # Update Projects, Contributors, Issues, Comments
+    path('projects/update/<int:id>/', ProjectUpdate.as_view(), name='ProjectUpdate'),
+    #path('issues/update/<int:id>/', IssueUpdate.as_view(), name='ProjectUpdate'),
+    # View details of Projects, Contributors, Issues, Comments
     path('users/<int:id>/', UserDetail.as_view(), name='UserDetail'),
     path('projects/<int:id>/', ProjectDetail.as_view(), name='ProjectDetail'),
     path('issues/<int:id>/', IssueDetail.as_view(), name='IssueDetail'),
     path('comment/<int:id>/', CommentDetail.as_view(), name='CommentDetail'),
+    # View list of Projects, Contributors, Issues, Comments
     path('users/<int:author_id>/', include(router_project.urls)),
     path('contributors/<int:project_id>/', include(router_contrib.urls)),
     path('users/<int:assigned_user_id>/', include(router_issue.urls)),

@@ -34,15 +34,27 @@ class ProjectsSerializer(serializers.ModelSerializer):
         author = self.context['request'].user
         project = Project.objects.create(author=author, **validated_data)
         return project
+    
+    def put(self, validated_data, pk):
+        project = Project.objects.filter(id=pk)
+        project.update(
+            title = validated_data['title'],
+            description = validated_data['description'],
+            type = validated_data['type'],
+        )
+        return project
 
 class ContributorsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contributor
         fields = ('id',
+                  'user',
+                  'project',
                   'is_owner',
-                  'project_id',
-                  'user_id',
         )
+    def create(self, validated_data):
+        contributor = Contributor.objects.create(**validated_data)
+        return contributor
 
 class IssuesSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,19 +62,25 @@ class IssuesSerializer(serializers.ModelSerializer):
         fields = ('id',
                   'title',
                   'description',
-                  'status',
-                  'priority',
-                  'tag',
+                  #'status',
+                  #'priority',
+                  #'tag',
                   'assigned_user_id',
-                  'author_user_id',
                   'project_id',
+                  #'author_user_id',
         )
+    def create(self, validated_data):
+        issue = Issue.objects.create(**validated_data)
+        return issue
 
 class CommentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ('id',
                   'description',
-                  'author_user_id',
+                  #'author_user_id',
                   'issue_id',
         )
+    def create(self, validated_data):
+        comment = Comment.objects.create(**validated_data)
+        return comment
