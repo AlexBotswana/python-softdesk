@@ -35,8 +35,9 @@ class ProjectsSerializer(serializers.ModelSerializer):
         project = Project.objects.create(author=author, **validated_data)
         return project
     
-    def put(self, validated_data, pk):
-        project = Project.objects.filter(id=pk)
+    def update(self, validated_data, id_project):
+        print(validated_data)
+        project = Project.objects.filter(id=id_project)
         project.update(
             title = validated_data['title'],
             description = validated_data['description'],
@@ -56,22 +57,42 @@ class ContributorsSerializer(serializers.ModelSerializer):
         contributor = Contributor.objects.create(**validated_data)
         return contributor
 
+class IssuesCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Issue
+        fields = ('id',
+                  'title',
+                  'description',
+                  'assigned_user_id',
+                  'project_id',
+        )
+
+    def create(self, validated_data):
+        issue = Issue.objects.create(**validated_data)
+        return issue
+
 class IssuesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Issue
         fields = ('id',
                   'title',
                   'description',
-                  #'status',
-                  #'priority',
-                  #'tag',
+                  'status',
+                  'priority',
+                  'tag',
                   'assigned_user_id',
                   'project_id',
-                  #'author_user_id',
         )
-    def create(self, validated_data):
-        issue = Issue.objects.create(**validated_data)
-        return issue
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.status = validated_data.get('status', instance.status)
+        instance.priority = validated_data.get('priority', instance.priority)
+        instance.tag = validated_data.get('tag', instance.tag)
+        instance.assigned_user_id = validated_data.get('assigned_user_id', instance.assigned_user_id)
+        instance.save()
+        return instance
 
 class CommentsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -81,6 +102,8 @@ class CommentsSerializer(serializers.ModelSerializer):
                   #'author_user_id',
                   'issue_id',
         )
+
     def create(self, validated_data):
         comment = Comment.objects.create(**validated_data)
         return comment
+

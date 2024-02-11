@@ -3,16 +3,21 @@ from rest_framework import generics, permissions, viewsets, status # Ctrl + Shif
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, Project, Contributor, Issue, Comment
-from .serializers import UsersSerializer, ProjectsSerializer, ContributorsSerializer, IssuesSerializer, CommentsSerializer
+from .serializers import UsersSerializer, ProjectsSerializer, ContributorsSerializer, IssuesCreateSerializer, IssuesSerializer, CommentsSerializer
 # from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
-# User = get_user_model()
+class Pagination(PageNumberPagination):
+    page_size = 10
+    page_query_param = 'page'
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 class SignUpView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -27,9 +32,7 @@ class SignUpView(generics.CreateAPIView):
 
         user.set_password(validated_data['password'])
         user.save()
-        #user = serializer.instance
-        #Token.objects.get_or_create(user=user)
-
+        
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -83,7 +86,7 @@ class ContributorsCreate(generics.CreateAPIView):
 
 class IssuesCreate(generics.CreateAPIView):
     queryset = Issue.objects.all()
-    serializer_class = IssuesSerializer
+    serializer_class = IssuesCreateSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
@@ -125,62 +128,45 @@ class CommentsCreate(generics.CreateAPIView):
 # Update Projects, Issues, Comments #
 ###################################################
 
-class ProjectUpdate(generics.UpdateAPIView):
+class ProjectsUpdate(generics.UpdateAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectsSerializer
     lookup_field = 'id'
     permission_classes = [IsAuthenticated]
     
-    def perform_update(self, request, id_project):
-        print('hello')
+    def perform_update(self, request):
         """
-        PUT Method for details project
+        Update Method for details project
         Return :
             - updated projects only by this author
         """
-        """get_object_or_404(Project, id=id_project)
-        author = Contributor.objects.filter(project=id_project, role="AUTHOR").first()
-        print(author)
-        print(self.request.user.id)
-        if author.user.id == self.request.user.id:
-            serializer = ProjectsSerializer(
-                data=request.data)
+        id_project = request.data['id']
+        author = request.data['author_id']
+        if author == self.request.user.id:
+            serializer = ProjectsSerializer(data=self.request.data)
             if serializer.is_valid():
-                serializer.put(serializer.data, id_project)
-                return Response(serializer.data)
-            return Response("INPUT ERROR",
-                            status=status.HTTP_406_NOT_ACCEPTABLE)
-        return Response("YOU ARE NOT THE AUTHOR OF THIS PROJECT !\
-             Update Unauthorized",
-                        status=status.HTTP_401_UNAUTHORIZED)"""
-        
-        """ project = get_object_or_404(Project, id=id_project)
-        author = Project.objects.filter(project_id=project, role="author").first()
-        print(author.user.id)
-        print("hello")
-        if author.user.id == self.request.user.id:
-            serializer = ProjectsSerializer(project, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
+                serializer.update(serializer.data, id_project)
                 return Response(serializer.data)
             return Response("INPUT ERROR", status=status.HTTP_406_NOT_ACCEPTABLE)
-        else:
-            return Response("YOU ARE NOT THE AUTHOR OF THIS PROJECT! Update Unauthorized", status=status.HTTP_401_UNAUTHORIZED)"""
+        return Response("YOU ARE NOT THE AUTHOR OF THIS PROJECT ! Update Unauthorized", status=status.HTTP_401_UNAUTHORIZED)
 
-"""class IssueUpdate(generics.UpdateAPIView):
-    queryset = Project.objects.all()
+class IssuesUpdate(generics.UpdateAPIView):
+    queryset = Issue.objects.all()
     serializer_class = IssuesSerializer
     lookup_field = 'id'
     permission_classes = [IsAuthenticated]
     
-    def update_issue(self, request, id_issue):
-        issue = get_object_or_404(Issue, id=id_issue)
-        serializer = IssuesSerializer(issue, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response("INPUT ERROR", status=status.HTTP_406_NOT_ACCEPTABLE)
-"""      
+    def perform_update(self, request):
+        id_issue = request.data['id']
+        assigned_user_id = request.data['assigned_user_id']
+        if assigned_user_id == self.request.user.id:
+            serializer = IssuesSerializer(data=self.request.data)
+            if serializer.is_valid():
+                serializer.update(serializer.data, id_issue)
+                return Response(serializer.data)
+            return Response("INPUT ERROR", status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response("YOU ARE NOT THE AUTHOR OF THIS PROJECT ! Update Unauthorized", status=status.HTTP_401_UNAUTHORIZED)
+
 ############################################################
 # View details of Projects, Contributors, Issues, Comments #
 ############################################################
@@ -213,6 +199,7 @@ class CommentDetail(generics.RetrieveAPIView):
 class ProjectsViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectsSerializer
+    pagination_class = Pagination
 
     def get_object(self):
        obj = get_object_or_404(Project.objects.all(), author_id=self.kwargs["pk"])
@@ -282,8 +269,8 @@ class CommentsViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # paramètre 'author' pour filtrer les projets par utilisateur
         author_id = self.kwargs.get("author_user_id")
-        projects = Comment.objects.filter(author_user_id=author_id)
-        return projects
+        comments = Comment.objects.filter(author_user_id=author_id)
+        return comments
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -293,4 +280,59 @@ class CommentsViewSet(viewsets.ModelViewSet):
 ###################################################
 # Delete Projects, Contributors, Issues, Comments #
 ###################################################
-    
+
+class ProjectsDelete(generics.DestroyAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectsSerializer
+    lookup_field = 'pk'
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        author = self.get_object().author_id
+        if author == self.request.user.id:
+            project = self.get_object()  # Getting the project object
+            project.delete()  # Deleting the project
+            return Response("Project deleted successfully", status=status.HTTP_204_NO_CONTENT)
+        return Response("You are not the author of this project! Delete unauthorized", status=status.HTTP_401_UNAUTHORIZED)
+
+class ContributorsDelete(generics.DestroyAPIView):
+    queryset = Contributor.objects.all()
+    serializer_class = ContributorsSerializer
+    lookup_field = 'pk'
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        contrib = self.get_object().user_id
+        if contrib == self.request.user.id:
+            contributor = self.get_object()  # Getting the contributor object
+            contributor.delete()  # Deleting the contributor
+            return Response("Project deleted successfully", status=status.HTTP_204_NO_CONTENT)
+        return Response("You are not the author of this project! Delete unauthorized", status=status.HTTP_401_UNAUTHORIZED)
+
+class IssuesDelete(generics.DestroyAPIView):
+    queryset = Issue.objects.all()
+    serializer_class = IssuesSerializer
+    lookup_field = 'pk'
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        author = self.get_object().author_user_id_id
+        if author == self.request.user.id:
+            issue = self.get_object()  # Getting the issue object
+            issue.delete()  # Deleting the issue
+            return Response("Issue deleted successfully", status=status.HTTP_204_NO_CONTENT)
+        return Response("You are not the author of this issue! Delete unauthorized", status=status.HTTP_401_UNAUTHORIZED)
+
+class CommentsDelete(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentsSerializer
+    lookup_field = 'pk'
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        author = self.get_object().author_user_id_id
+        if author == self.request.user.id:
+            comment = self.get_object()  # Getting the comment object
+            comment.delete()  # Deleting the comment
+            return Response("Comment deleted successfully", status=status.HTTP_204_NO_CONTENT)
+        return Response("You are not the author of this comment! Delete unauthorized", status=status.HTTP_401_UNAUTHORIZED)
