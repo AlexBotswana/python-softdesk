@@ -15,10 +15,33 @@ class UsersSerializer(serializers.ModelSerializer):
                   'can_be_contacted',
                   'can_data_be_shared',
         )
-        # extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         user = get_user_model().objects.create_user(**validated_data)
+        return user
+
+class UsersUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ('id',
+                  'first_name',
+                  'last_name',
+                  'email',
+                  'birthdate',
+                  'can_be_contacted',
+                  'can_data_be_shared',
+        )
+
+    def update(self, validated_data, id_user):
+        user = User.objects.filter(id=id_user)
+        user.update(
+            first_name = validated_data['first_name'],
+            last_name = validated_data['last_name'],
+            email = validated_data['email'],
+            birthdate = validated_data['birthdate'],
+            can_be_contacted = validated_data['can_be_contacted'],
+            can_data_be_shared = validated_data['can_data_be_shared'],
+        )
         return user
 
 class ProjectsSerializer(serializers.ModelSerializer):
@@ -36,7 +59,6 @@ class ProjectsSerializer(serializers.ModelSerializer):
         return project
     
     def update(self, validated_data, id_project):
-        print(validated_data)
         project = Project.objects.filter(id=id_project)
         project.update(
             title = validated_data['title'],
@@ -72,6 +94,10 @@ class IssuesCreateSerializer(serializers.ModelSerializer):
         return issue
 
 class IssuesSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(required=False)
+    priority = serializers.CharField(required=False)
+    tag = serializers.CharField(required=False)
+
     class Meta:
         model = Issue
         fields = ('id',
@@ -84,22 +110,23 @@ class IssuesSerializer(serializers.ModelSerializer):
                   'project_id',
         )
 
-    def update(self, instance, validated_data):
-        instance.title = validated_data.get('title', instance.title)
-        instance.description = validated_data.get('description', instance.description)
-        instance.status = validated_data.get('status', instance.status)
-        instance.priority = validated_data.get('priority', instance.priority)
-        instance.tag = validated_data.get('tag', instance.tag)
-        instance.assigned_user_id = validated_data.get('assigned_user_id', instance.assigned_user_id)
-        instance.save()
-        return instance
+    def update(self, validated_data, id_issue):
+        issue = Issue.objects.filter(id=id_issue)
+        issue.update(
+            title = validated_data.get('title'),
+            description = validated_data['description'],
+            status = validated_data.get('status'),
+            priority = validated_data.get('priority'),
+            tag = validated_data.get('tag'),
+            assigned_user_id = validated_data['assigned_user_id'],
+        )
+        return issue
 
 class CommentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ('id',
                   'description',
-                  #'author_user_id',
                   'issue_id',
         )
 

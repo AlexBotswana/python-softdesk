@@ -139,13 +139,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'softdeskapi.User'
 
+AUTHENTICATION_CLASSES = [
+    'rest_framework_simplejwt.authentication.JWTAuthentication',
+]
+
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
-    'DEFAULT_AUTHENTICATION_CLASSES': 'rest_framework_simplejwt.authentication.JWTAuthentication',
-    'DEFAULT_PERMISSION_CLASSES': 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
-    #'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination', 
-	#'PAGE_SIZE': 2, 
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+    ),
+    'DEFAULT_PAGINATION_CLASS': (
+        'rest_framework.pagination.PageNumberPagination',
+    ), 
+	'PAGE_SIZE': (2,), 
 }
 
 SIMPLE_JWT = {
@@ -159,8 +169,9 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
     'ACCESS_TOKEN_LIFETIME': timedelta(days=10),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=20),
+    'BLACKLIST': True,
 }
-
+'''
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -179,7 +190,4 @@ LOGGING = {
         },
     },
 }
-
-AUTHENTICATION_CLASSES = [
-    'rest_framework_simplejwt.authentication.JWTAuthentication',
-]
+'''

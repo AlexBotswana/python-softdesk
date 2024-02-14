@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth.models import User
 from softdeskapi.views import (
                             SignUpView,
                             LogoutView,
@@ -24,6 +23,7 @@ from softdeskapi.views import (
                             ContributorsCreate,
                             IssuesCreate,
                             CommentsCreate,
+                            UsersUpdate,
                             ProjectsUpdate,
                             IssuesUpdate,
                             ProjectsDelete,
@@ -65,7 +65,8 @@ urlpatterns = [
     path('contributors/create/', ContributorsCreate.as_view(), name='ContributorCreate'),
     path('issues/create/', IssuesCreate.as_view(), name='IssueCreate'),
     path('comments/create/', CommentsCreate.as_view(), name='CommentCreate'),
-    # Update Projects, Contributors, Issues, Comments
+    # Update Users, Projects, Issues
+    path('users/update/<int:id>/', UsersUpdate.as_view(), name='UserUpdate'),
     path('projects/update/<int:id>/', ProjectsUpdate.as_view(), name='ProjectUpdate'),
     path('issues/update/<int:id>/', IssuesUpdate.as_view(), name='IssueUpdate'),
     # Delete Projects, Contributors, Issues, Comments

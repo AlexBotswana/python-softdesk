@@ -2,6 +2,15 @@ from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 
+from django.db import models
+
+class BlacklistedToken(models.Model):
+    token = models.CharField(max_length=500, unique=True)
+    blacklisted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.token
+
 class Project(models.Model):
     PROJECT_TYPES = (
         ('BE', 'Back-end'),
@@ -46,7 +55,6 @@ class User(AbstractUser):
         Permission,
         related_name='softdesk_users_permissions',
         )
-    # Functions: authenticate() and createResource()
 
 class Contributor(models.Model):
     user = models.ForeignKey(
@@ -120,8 +128,7 @@ class Issue(models.Model):
 
     def __str__(self):
         return self.title
-    
-    # Functions: updateStatus() and createComment()
+
 
 class Comment(models.Model):
     description = models.TextField(
@@ -147,5 +154,3 @@ class Comment(models.Model):
         return "Commentaire de {}".format(
             self.author_user_id.username,
             )
-    
-    # Functions:  updateText()
