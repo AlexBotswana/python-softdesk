@@ -1,4 +1,4 @@
-# python-litreview
+# python-softdesk
 Projet 10 OCR Formation Python
 
 Réalisation d'une API RESTful (backend sécurisé) avec Django pour permettre à une application (Softdesk Support) de remonter et suivre des problèmes techniques.
