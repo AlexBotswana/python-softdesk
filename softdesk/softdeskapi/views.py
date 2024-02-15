@@ -103,7 +103,7 @@ class IssuesCreate(generics.CreateAPIView):
         try:
             assigned_user_instance = User.objects.get(pk=assigned_user)
             author_user_instance = User.objects.get(pk=author_user)
-            project_instance = Project.objects.get(pk=project_id)
+            #project_instance = Project.objects.get(pk=project_id)
         except User.DoesNotExist:
             raise NotFound("User not found with id {}".format(assigned_user))
         except Project.DoesNotExist:
@@ -112,7 +112,7 @@ class IssuesCreate(generics.CreateAPIView):
         serializer.save(title=title,
                         description=description,
                         assigned_user_id=assigned_user_instance,
-                        project_id=project_instance,
+                        project_id=project_id,
                         author_user_id=author_user_instance,
                     )
 
